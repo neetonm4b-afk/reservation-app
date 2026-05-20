@@ -70,6 +70,12 @@ export const authConfig: NextAuthConfig = {
     error: "/login",
   },
   callbacks: {
+    authorized: async ({ auth, request }) => {
+      return !!auth?.user;
+    },
+    async redirect({ url, baseUrl }) {
+      return url.startsWith(baseUrl) ? url : baseUrl;
+    },
     async jwt({ token, user, account }) {
       if (user) {
         if (account?.provider === "credentials") {
