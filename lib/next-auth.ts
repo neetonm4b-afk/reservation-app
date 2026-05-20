@@ -9,6 +9,11 @@ import LineProvider from "next-auth/providers/line";
 import { getUserByEmail, verifyPassword, auditLog } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
+const NEXTAUTH_URL = process.env.NEXTAUTH_URL || 
+  (process.env.NODE_ENV === 'production' 
+    ? 'https://reservation-5xl4dgor8-neetonm4b-gmailcoms-projects.vercel.app'
+    : 'http://localhost:3001');
+
 export const authConfig: NextAuthConfig = {
   // NOTE: PrismaAdapter is omitted for Prisma v7 type compatibility.
   // Sessions are managed via JWT. Social login accounts are stored manually.
