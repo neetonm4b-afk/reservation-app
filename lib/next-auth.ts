@@ -9,6 +9,7 @@ import { prisma } from "@/lib/db";
 export const authConfig: NextAuthConfig = {
   // NOTE: PrismaAdapter is omitted for Prisma v7 type compatibility.
   // Sessions are managed via JWT. Social login accounts are stored manually.
+  trustHost: true,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
