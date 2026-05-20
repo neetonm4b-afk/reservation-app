@@ -1,3 +1,6 @@
+console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+
 import NextAuth from "next-auth";
 import type { NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
