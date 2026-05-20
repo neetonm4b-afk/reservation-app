@@ -1,0 +1,5 @@
+クライアント ID
+595670968909-tnfb6imcij7csu9vbki01ojcvd6o8el4.apps.googleusercontent.com
+
+クライアント シークレット
+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
