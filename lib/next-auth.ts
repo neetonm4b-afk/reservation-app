@@ -9,10 +9,9 @@ import LineProvider from "next-auth/providers/line";
 import { getUserByEmail, verifyPassword, auditLog } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
+const isDev = process.env.NODE_ENV === 'development';
 const NEXTAUTH_URL = process.env.NEXTAUTH_URL || 
-  (process.env.NODE_ENV === 'production' 
-    ? 'https://reservation-5xl4dgor8-neetonm4b-gmailcoms-projects.vercel.app'
-    : 'http://localhost:3001');
+  (isDev ? 'http://localhost:3001' : 'https://reservation-5xl4dgor8-neetonm4b-gmailcoms-projects.vercel.app');
 
 export const authConfig: NextAuthConfig = {
   // NOTE: PrismaAdapter is omitted for Prisma v7 type compatibility.
