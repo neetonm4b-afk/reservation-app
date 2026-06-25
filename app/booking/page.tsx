@@ -101,7 +101,7 @@ export default function BookingPage() {
         </div>
       </header>
 
-      <main style={{ maxWidth: 700, margin: "0 auto", paddingTop: 100, paddingBottom: 64, paddingLeft: 16, paddingRight: 16 }}>
+      <main style={{ maxWidth: 700, margin: "0 auto", paddingTop: 100, paddingBottom: 64, paddingLeft: 16, paddingRight: 16, width: "100%" }}>
         <div className="steps" style={{ marginBottom: 32 }}>
           {STEP_LABELS.map((label, i) => (
             <div key={label} className={`step ${step === i + 1 ? "active" : step > i + 1 ? "done" : ""}`} style={{ textAlign: "center" }}>
