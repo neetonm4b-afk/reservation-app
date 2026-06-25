@@ -1,6 +1,3 @@
-console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
-console.log('NODE_ENV:', process.env.NODE_ENV);
-
 import NextAuth from "next-auth";
 import type { NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -8,18 +5,16 @@ import GoogleProvider from "next-auth/providers/google";
 import LineProvider from "next-auth/providers/line";
 import { getUserByEmail, verifyPassword, auditLog } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { authConfig } from "./auth.config";
 
-const NEXTAUTH_URL = process.env.NEXTAUTH_URL || 'https://reservation-5xl4dgor8-neetonm4b-gmailcoms-projects.vercel.app';
-
-export const authConfig: NextAuthConfig = {
-  // NOTE: PrismaAdapter is omitted for Prisma v7 type compatibility.
-  // Sessions are managed via JWT. Social login accounts are stored manually.
+export const config: NextAuthConfig = {
+  ...authConfig,
   trustHost: true,
   basePath: "/api/auth",
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       allowDangerousEmailAccountLinking: true,
     }),
     LineProvider({
@@ -67,28 +62,13 @@ export const authConfig: NextAuthConfig = {
       },
     }),
   ],
-  session: {
-    strategy: "jwt",
-    maxAge: 7 * 24 * 60 * 60,
-  },
-  pages: {
-    signIn: "/login",
-    error: "/login",
-  },
   callbacks: {
-    authorized: async ({ auth, request }) => {
-      return !!auth?.user;
-    },
-    async redirect({ url, baseUrl }) {
-      return url.startsWith(baseUrl) ? url : baseUrl;
-    },
+    ...authConfig.callbacks,
     async jwt({ token, user, account }) {
       if (user) {
         if (account?.provider === "credentials") {
-          // 通常ログイン: user.id は既にPrismaのID
           token.userId = user.id;
         } else if (user.email) {
-          // OAuthログイン: emailからPrismaのIDを引く
           const dbUser = await getUserByEmail(user.email);
           token.userId = dbUser?.id ?? user.id;
         }
@@ -105,7 +85,6 @@ export const authConfig: NextAuthConfig = {
       return session;
     },
     async signIn({ user, account }) {
-      // For OAuth providers, upsert user record
       if (account?.provider !== "credentials" && user.email) {
         try {
           const existing = await getUserByEmail(user.email);
@@ -133,4 +112,4 @@ export const authConfig: NextAuthConfig = {
   },
 };
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+export const { handlers, auth, signIn, signOut } = NextAuth(config);

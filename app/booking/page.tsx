@@ -4,6 +4,11 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatDate, formatPrice } from "@/lib/utils";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
+import { CheckoutForm } from "./CheckoutForm";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || "pk_test_your-stripe-public-key");
 
 type Service = { id: string; name: string; description: string | null; price: number; durationMinutes: number; category: string | null; colorTag: string | null };
 type Slot = { startTime: string; endTime: string; available: boolean };
@@ -23,6 +28,7 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(false);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [bookingId, setBookingId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
   const [error, setError] = useState("");
 
   // Calendar state
@@ -70,14 +76,19 @@ export default function BookingPage() {
       if (!res.ok) throw new Error(data.error);
       setBookingId(data.data.bookingId);
 
-      // テストモード：決済をスキップして直接確定
-      const confirmRes = await fetch(`/api/bookings/${data.data.bookingId}/confirm`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      if (!confirmRes.ok) throw new Error("確定に失敗しました");
-      setStep(5);
+      if (data.data.clientSecret) {
+        setClientSecret(data.data.clientSecret);
+        setStep(4);
+      } else {
+        // テストモードや無料サービスの場合：決済をスキップして直接確定
+        const confirmRes = await fetch(`/api/bookings/${data.data.bookingId}/confirm`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        if (!confirmRes.ok) throw new Error("確定に失敗しました");
+        setStep(5);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "エラーが発生しました");
     }
@@ -241,21 +252,18 @@ export default function BookingPage() {
                 value={notes} onChange={e => setNotes(e.target.value)} />
             </div>
             <div style={{ display: "flex", gap: 12 }}>
-              <button onClick={() => setStep(2)} className="btn btn-ghost">← 戻る</button>
-              <button onClick={() => setStep(4)} className="btn btn-primary" style={{ flex: 1 }}>
-                お支払いへ進む →
+              <button onClick={() => setStep(2)} className="btn btn-ghost" disabled={loading}>← 戻る</button>
+              <button onClick={handleBooking} className="btn btn-primary" style={{ flex: 1 }} disabled={loading}>
+                {loading ? "処理中..." : "お支払いへ進む →"}
               </button>
             </div>
           </div>
         )}
 
-        {/* Step 4: Payment (test mode) */}
-        {step === 4 && selectedService && selectedSlot && (
+        {/* Step 4: Payment */}
+        {step === 4 && selectedService && selectedSlot && clientSecret && (
           <div>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: 20 }}>お支払い</h2>
-            <div className="alert alert-info" style={{ marginBottom: 20 }}>
-              🧪 <strong>テストモード：</strong>実際の決済は発生しません。「予約を確定する」ボタンで完了します。
-            </div>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: 20 }}>クレジットカード決済</h2>
             <div className="card card-body" style={{ marginBottom: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                 <span style={{ color: "var(--color-gray-500)" }}>{selectedService.name}</span>
@@ -266,10 +274,18 @@ export default function BookingPage() {
                 <span style={{ color: "var(--color-primary)" }}>{formatPrice(selectedService.price)}</span>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 12 }}>
-              <button onClick={() => setStep(3)} className="btn btn-ghost">← 戻る</button>
-              <button onClick={handleBooking} className="btn btn-primary" disabled={loading} style={{ flex: 1 }}>
-                {loading ? "処理中..." : `${formatPrice(selectedService.price)} を支払って予約確定`}
+            <div className="card card-body" style={{ padding: 24 }}>
+              <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <CheckoutForm 
+                  bookingId={bookingId} 
+                  amount={selectedService.price} 
+                  onSuccess={() => setStep(5)} 
+                />
+              </Elements>
+            </div>
+            <div style={{ textAlign: "center", marginTop: 20 }}>
+              <button onClick={() => setStep(3)} className="btn btn-ghost" style={{ fontSize: "0.875rem" }}>
+                ← 戻って内容を修正する
               </button>
             </div>
           </div>
