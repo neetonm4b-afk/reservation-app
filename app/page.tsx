@@ -1,6 +1,6 @@
 
 import Link from 'next/link';
-import './lp.css';
+// import './lp.css';
 
 export default function Page() {
   return (
